@@ -1,69 +1,60 @@
-#ifndef KALMAN_FILTER_H_
-#define KALMAN_FILTER_H_
-#include "Eigen/Dense"
+#pragma once
 
-class KalmanFilter {
-public:
+#include <tuple>
+#include <chrono>
 
-  // state vector
-  Eigen::VectorXd x_;
+namespace kalman_filter {
+  template<typename Model>
+  using State = typename Model::State;
+  
+  namespace internal {
+    template<typename Model>
+    State<Model> predict(std::chrono::microseconds now, State<Model> state) {
+      const auto& ts = std::get<0>(state);
+      const auto& x = std::get<1>(state);
+      const auto& P = std::get<2>(state);
+      
+      auto dt = std::chrono::duration_cast<typename Model::Interval>(now - ts);
+      auto F = Model::F(dt);
+      auto G = Model::G(dt);
+      
+      return {now, F*x, F*P*F.transpose() + G*Model::Q*G.transpose()};
+    }
 
-  // state covariance matrix
-  Eigen::MatrixXd P_;
+    template<typename Model, typename Z>
+    State<Model> update(typename Z::Measurement z, State<Model> state) {
+      const auto& now = std::get<0>(state);
+      const auto& x = std::get<1>(state);
+      const auto& P = std::get<2>(state);
 
-  // state transition matrix
-  Eigen::MatrixXd F_;
+      auto Hj = Z::Hj(x);
+      auto zp = Z::Hp(x); 
+      auto PHjt = P * Hj.transpose();
+      
+      auto y = Z::Normalize(z - zp);
+      auto S = Hj * PHjt + Z::R;
+      auto K = PHjt * S.inverse();
+      
+      return {now, x + K*y, (Model::I - K*Hj)*P};
+    }
+  }
+  
+  template<typename Model, typename Z>
+  std::tuple<bool, State<Model>>
+  update(typename Z::Package package, std::tuple<bool, State<Model>> state) {
+    auto now = std::get<0>(package);
+    auto z = std::get<1>(package);
 
-  // process covariance matrix
-  Eigen::MatrixXd Q_;
-
-  // measurement matrix
-  Eigen::MatrixXd H_;
-
-  // measurement covariance matrix
-  Eigen::MatrixXd R_;
-
-  /**
-   * Constructor
-   */
-  KalmanFilter();
-
-  /**
-   * Destructor
-   */
-  virtual ~KalmanFilter();
-
-  /**
-   * Init Initializes Kalman filter
-   * @param x_in Initial state
-   * @param P_in Initial state covariance
-   * @param F_in Transition matrix
-   * @param H_in Measurement matrix
-   * @param R_in Measurement covariance matrix
-   * @param Q_in Process covariance matrix
-   */
-  void Init(Eigen::VectorXd &x_in, Eigen::MatrixXd &P_in, Eigen::MatrixXd &F_in,
-      Eigen::MatrixXd &H_in, Eigen::MatrixXd &R_in, Eigen::MatrixXd &Q_in);
-
-  /**
-   * Prediction Predicts the state and the state covariance
-   * using the process model
-   * @param delta_T Time between k and k+1 in s
-   */
-  void Predict();
-
-  /**
-   * Updates the state by using standard Kalman Filter equations
-   * @param z The measurement at k+1
-   */
-  void Update(const Eigen::VectorXd &z);
-
-  /**
-   * Updates the state by using Extended Kalman Filter equations
-   * @param z The measurement at k+1
-   */
-  void UpdateEKF(const Eigen::VectorXd &z);
-
-};
-
-#endif /* KALMAN_FILTER_H_ */
+    auto initialized = std::get<0>(state);
+    auto s = std::get<1>(state);
+    
+    if(initialized) {
+      // don't predict if measuremnet came for the same moment as previous one
+      auto p = std::get<0>(s) == now ? s : internal::predict<Model>(now, std::move(s));
+      auto u = internal::update<Model, Z>(std::move(z), std::move(p));
+      return {true, u};
+    } else {
+      return {true, Model::template Init<Z>(now, std::move(z))};
+    }
+  }
+}
