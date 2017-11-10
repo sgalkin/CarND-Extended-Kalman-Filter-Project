@@ -18,7 +18,7 @@ namespace kalman_filter {
       auto F = Model::F(dt);
       auto G = Model::G(dt);
       
-      return {now, F*x, F*P*F.transpose() + G*Model::Q*G.transpose()};
+      return std::make_tuple(now, F*x, F*P*F.transpose() + G*Model::Q*G.transpose());
     }
 
     template<typename Model, typename Z>
@@ -35,7 +35,7 @@ namespace kalman_filter {
       auto S = Hj * PHjt + Z::R;
       auto K = PHjt * S.inverse();
       
-      return {now, x + K*y, (Model::I - K*Hj)*P};
+      return std::make_tuple(now, x + K*y, (Model::I - K*Hj)*P);
     }
   }
   
@@ -52,9 +52,9 @@ namespace kalman_filter {
       // don't predict if measuremnet came for the same moment as previous one
       auto p = std::get<0>(s) == now ? s : internal::predict<Model>(now, std::move(s));
       auto u = internal::update<Model, Z>(std::move(z), std::move(p));
-      return {true, u};
+      return std::make_tuple(true, u);
     } else {
-      return {true, Model::template Init<Z>(now, std::move(z))};
+      return std::make_tuple(true, Model::template Init<Z>(now, std::move(z)));
     }
   }
 }

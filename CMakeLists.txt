@@ -45,16 +45,17 @@ include_directories(${OPENSSL_INCLUDE_DIR})
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin") 
   include_directories(/usr/local/include)
-  find_library(UWS_LIB uWS)
-  if(NOT UWS_LIB)
-    message(FATAL_ERROR "uWS library not found")
-  endif()
-
-  find_library(UV_LIB uv)
-  if(NOT UV_LIB)
-    message(FATAL_ERROR "uv library not found")
-  endif()
 endif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin") 
+
+find_library(UWS_LIB uWS)
+if(NOT UWS_LIB)
+  message(FATAL_ERROR "uWS library not found")
+endif()
+
+find_library(UV_LIB uv)
+if(NOT UV_LIB)
+  message(FATAL_ERROR "uv library not found")
+endif()
 
 add_executable(ExtendedKF ${sources} ${main})
 add_executable(Test ${sources} ${tests} ${test})

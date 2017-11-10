@@ -33,17 +33,17 @@ struct Model {
 
   template<typename Z>
   static State Init(std::chrono::microseconds now, typename Z::Measurement z) {
-    return {now,                      // initial timestamp
-            // initial state 
-            (x() << Z::Cartesian(z),  // measurement mapped to cartesian coordinates
-                    Eigen::Matrix<double, N-C, 1>::Zero() // zeros for remaining fields
-            ).finished(),
-            // R | 0
-            // 0 | Q
-            // R - measurement covariance, Q - process covariance (acceleration)
-            (P() << Z::R.template block<C, C>(0, 0), Eigen::Matrix<double, C, N-C>::Zero(),
-                    Eigen::Matrix<double, N-C, C>::Zero(), Q
-            ).finished()};
+    return std::make_tuple(now,                      // initial timestamp
+                           // initial state 
+                           (x() << Z::Cartesian(z),  // measurement mapped to cartesian coordinates
+                                   Eigen::Matrix<double, N-C, 1>::Zero() // zeros for remaining fields
+                           ).finished(),
+                           // R | 0
+                           // 0 | Q
+                           // R - measurement covariance, Q - process covariance (acceleration)
+                           (P() << Z::R.template block<C, C>(0, 0), Eigen::Matrix<double, C, N-C>::Zero(),
+                                   Eigen::Matrix<double, N-C, C>::Zero(), Q
+                           ).finished());
   }
 };
 
