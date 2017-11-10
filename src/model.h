@@ -2,6 +2,7 @@
 
 #include <tuple>
 #include <chrono>
+
 #include "Eigen/Dense"
 
 struct Model {

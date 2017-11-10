@@ -30,5 +30,7 @@ TEST_CASE("Rubric", "[require]") {
   for(std::string s; std::getline(f, s); ) {
     app.ProcessMessage(s);
   }
+
+  INFO(rmse);
   REQUIRE((rmse.array() < (Model::x() << 0.11, 0.11, 0.52, 0.52).finished().array()).all());
 }
