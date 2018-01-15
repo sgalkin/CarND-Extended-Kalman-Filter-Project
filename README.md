@@ -1,5 +1,6 @@
 # Extended Kalman Filter Project
 [![Udacity - Self-Driving Car NanoDegree](https://s3.amazonaws.com/udacity-sdc/github/shield-carnd.svg)](http://www.udacity.com/drive)
+[![CircleCI](https://circleci.com/gh/sgalkin/CarND-T2P1.svg?style=svg&circle-token=a720a551891f4cfc5bf8c8dc1b1a0bede8377493)](https://circleci.com/gh/sgalkin/CarND-T2P1)
 
 This project implements a Kalman filter to estimate the state of a moving
 object of interest with noisy lidar and radar measurements.
